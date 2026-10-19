@@ -4,6 +4,7 @@
 ผลจริงจะบันทึกในโฟลเดอร์ results ข้างไฟล์นี้ ไม่มีประวัติสนทนาข้ามคำถาม
 """
 import json
+import tempfile
 import time
 import urllib.request
 import urllib.error
@@ -67,11 +68,30 @@ def ask(model, prompt):
     }
 
 
+def display_text(text):
+    """Keep valid Unicode readable and expose malformed surrogate code points."""
+    return text.encode('utf-8', errors='backslashreplace').decode('utf-8')
+
+
+def write_utf8_atomic(path, text):
+    """Encode before opening a file and preserve the previous result on failure."""
+    payload = text.encode('utf-8', errors='backslashreplace')
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.chat-', delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(payload)
+        temporary.replace(path)
+    finally:
+        if temporary is not None and temporary.exists():
+            temporary.unlink()
+
+
 def save(record):
     folder = Path(__file__).resolve().parent / 'results'
     folder.mkdir(exist_ok=True)
     stem = folder / record['run_id']
-    stem.with_suffix('.json').write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
+    json_text = json.dumps(record, ensure_ascii=False, indent=2)
     lines = ['ทดสอบตอบคำถามทั่วไป', 'คำถาม: ' + record['prompt'],
              'เวลารวมเป็นเวลารอจริง รวมการโหลดโมเดลถ้ามี ไม่ใช่ความเร็วสร้างคำตอบล้วน',
              'แต่ละคำถามเริ่มใหม่ ไม่มีประวัติสนทนา', '']
@@ -85,7 +105,10 @@ def save(record):
             if row['truncated']:
                 lines.append('คำเตือน: คำตอบถึงขีดจำกัดโทเคน อาจยังไม่จบ')
         lines.append('')
-    stem.with_suffix('.txt').write_text('\n'.join(lines), encoding='utf-8')
+    # Render both outputs before writing; malformed code points remain visible as escapes.
+    text_output = '\n'.join(lines)
+    write_utf8_atomic(stem.with_suffix('.json'), json_text)
+    write_utf8_atomic(stem.with_suffix('.txt'), text_output)
     return stem.with_suffix('.txt')
 
 
@@ -103,10 +126,15 @@ def main():
                 print('docker exec -it ollama ollama pull ' + model)
             return
     except (RuntimeError, ValueError) as exc:
-        print(exc)
+        print(display_text(str(exc)))
         return
     while True:
         prompt = input('\nคำถามของคุณ: ').strip()
+        try:
+            prompt.encode('utf-8')
+        except UnicodeEncodeError:
+            print('ข้อความมีอักขระที่เข้ารหัส UTF-8 ไม่ได้ กรุณาพิมพ์ใหม่ หรือพิมพ์ exit เพื่อออก')
+            continue
         if prompt.lower() in ('exit', '/bye', 'quit'):
             break
         if not prompt:
@@ -124,13 +152,13 @@ def main():
             print('\nกำลังรอ %s ... (อาจใช้เวลาหลายนาที)' % model, flush=True)
             try:
                 row = ask(model, prompt)
-                print(row['answer'])
+                print(display_text(row['answer']))
                 print('เวลารวม: %.3f วินาที | เวลาโหลด: %.3f วินาที' % (row['elapsed_seconds'], row['load_seconds']))
                 if row['truncated']:
                     print('คำตอบอาจยังไม่จบ เพราะถึงขีดจำกัดโทเคน')
             except (RuntimeError, ValueError) as exc:
                 row = {'model': model, 'error': str(exc)}
-                print('ข้อผิดพลาด:', exc)
+                print('ข้อผิดพลาด:', display_text(str(exc)))
             record['results'].append(row)
             path = save(record)  # เก็บผลแต่ละตัวทันที แม้ตัวถัดไปเกิดปัญหา
         print('\nบันทึกผลแล้ว:', path)

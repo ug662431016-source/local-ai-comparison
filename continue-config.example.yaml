@@ -1,0 +1,22 @@
+name: My Two Local Models
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Qwen Coder 1.5B
+    provider: ollama
+    model: qwen2.5-coder:1.5b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 4096
+
+  - name: Llama 3.2 3B
+    provider: ollama
+    model: llama3.2:3b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 4096

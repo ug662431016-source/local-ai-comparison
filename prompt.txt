@@ -1,0 +1,14 @@
+Create a simple To-do List web app in one HTML file.
+Include CSS and JavaScript inside the same file.
+
+Requirements:
+1. A text input and an Add button.
+2. Users can add a task by clicking Add.
+3. Empty tasks must not be added.
+4. Users can mark a task as completed.
+5. Each task has a Delete button.
+6. Save tasks using localStorage so they remain after refreshing.
+7. Use a simple blue design.
+8. Do not use external libraries.
+
+Return only the complete HTML code.

@@ -1,0 +1,256 @@
+{
+  "captured_at_utc": "2026-10-19T12:04:21.474814+00:00",
+  "status": "passed",
+  "command": [
+    "docker",
+    "compose",
+    "-p",
+    "devops-review",
+    "-f",
+    "compose.yaml",
+    "run",
+    "--rm",
+    "--no-deps",
+    "-T",
+    "mcp"
+  ],
+  "server": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "experimental": {},
+      "prompts": {
+        "listChanged": false
+      },
+      "resources": {
+        "subscribe": false,
+        "listChanged": false
+      },
+      "tools": {
+        "listChanged": false
+      }
+    },
+    "serverInfo": {
+      "name": "DevOps Local Workspace",
+      "version": "1.30.0"
+    }
+  },
+  "round_trip": true,
+  "path_traversal_rejected": true,
+  "transcript": [
+    {
+      "direction": "request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2024-11-05",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "devops-terminal-probe",
+            "version": "1.0"
+          }
+        }
+      }
+    },
+    {
+      "direction": "response",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "protocolVersion": "2024-11-05",
+          "capabilities": {
+            "experimental": {},
+            "prompts": {
+              "listChanged": false
+            },
+            "resources": {
+              "subscribe": false,
+              "listChanged": false
+            },
+            "tools": {
+              "listChanged": false
+            }
+          },
+          "serverInfo": {
+            "name": "DevOps Local Workspace",
+            "version": "1.30.0"
+          }
+        }
+      }
+    },
+    {
+      "direction": "request",
+      "message": {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized"
+      }
+    },
+    {
+      "direction": "request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/list",
+        "params": {}
+      }
+    },
+    {
+      "direction": "response",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "tools": [
+            {
+              "name": "list_files",
+              "description": "List files within the isolated demonstration workspace.",
+              "inputSchema": {
+                "properties": {
+                  "path": {
+                    "default": ".",
+                    "title": "Path",
+                    "type": "string"
+                  }
+                },
+                "title": "list_filesArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "read_file",
+              "description": "Read a UTF-8 text file inside the demonstration workspace.",
+              "inputSchema": {
+                "properties": {
+                  "path": {
+                    "title": "Path",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path"
+                ],
+                "title": "read_fileArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "write_file",
+              "description": "Write UTF-8 text inside the demonstration workspace.",
+              "inputSchema": {
+                "properties": {
+                  "path": {
+                    "title": "Path",
+                    "type": "string"
+                  },
+                  "content": {
+                    "title": "Content",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "content"
+                ],
+                "title": "write_fileArguments",
+                "type": "object"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "direction": "request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {
+          "name": "write_file",
+          "arguments": {
+            "path": "probe-20261019T120421471057.txt",
+            "content": "MCP round-trip succeeded.\n"
+          }
+        }
+      }
+    },
+    {
+      "direction": "response",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"path\": \"probe-20261019T120421471057.txt\",\n  \"bytes\": 26\n}"
+            }
+          ],
+          "isError": false
+        }
+      }
+    },
+    {
+      "direction": "request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "tools/call",
+        "params": {
+          "name": "read_file",
+          "arguments": {
+            "path": "probe-20261019T120421471057.txt"
+          }
+        }
+      }
+    },
+    {
+      "direction": "response",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"path\": \"probe-20261019T120421471057.txt\",\n  \"content\": \"MCP round-trip succeeded.\\n\"\n}"
+            }
+          ],
+          "isError": false
+        }
+      }
+    },
+    {
+      "direction": "request",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "tools/call",
+        "params": {
+          "name": "read_file",
+          "arguments": {
+            "path": "../outside.txt"
+          }
+        }
+      }
+    },
+    {
+      "direction": "response",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Error executing tool read_file: Absolute paths and parent traversal are not allowed"
+            }
+          ],
+          "isError": true
+        }
+      }
+    }
+  ]
+}

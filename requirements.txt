@@ -1,1 +1,1 @@
-requests
+# chat_input.py and local_agent.py use Python's standard library only.

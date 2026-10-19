@@ -8,6 +8,6 @@ WORKDIR /app
 COPY requirements-mcp.txt .
 RUN pip install --no-cache-dir -r requirements-mcp.txt
 
-COPY . .
+COPY mcp_server.py workspace_tools.py .
 
 CMD ["python", "mcp_server.py"]

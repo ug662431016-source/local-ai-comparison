@@ -1,0 +1,35 @@
+# Replace /ABSOLUTE/PATH/TO/DevOps-ready with your project directory.
+# This config is an optional MCP example, not proof of a successful UI test.
+name: Local Models and Docker Workspace Tools
+version: 1.0.0
+schema: v1
+models:
+  - name: Llama 3.2 3B
+    provider: ollama
+    model: llama3.2:3b
+    apiBase: http://localhost:11434
+    roles: [chat]
+    defaultCompletionOptions:
+      contextLength: 4096
+      temperature: 0
+  - name: Qwen Coder 1.5B
+    provider: ollama
+    model: qwen2.5-coder:1.5b
+    apiBase: http://localhost:11434
+    roles: [chat]
+    defaultCompletionOptions:
+      contextLength: 4096
+      temperature: 0
+mcpServers:
+  - name: Docker Local Workspace
+    command: docker
+    args:
+      - compose
+      - -f
+      - /ABSOLUTE/PATH/TO/DevOps-ready/compose.yaml
+      - run
+      - --rm
+      - --no-deps
+      - -T
+      - mcp
+    connectionTimeout: 30000

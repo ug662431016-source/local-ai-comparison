@@ -7,3 +7,8 @@ venv/
 .env
 .env.*
 !.env.example
+.runtime/
+.native-models/
+agent_workspace/
+mcp_workspace/
+.venv-mcp/

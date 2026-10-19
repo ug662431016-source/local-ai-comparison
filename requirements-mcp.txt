@@ -1,2 +1,1 @@
-mcp
-docker
+mcp==1.30.0

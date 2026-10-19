@@ -1,0 +1,3 @@
+- [ ] Study Docker.
+- [ ] Run local AI with Ollama.
+- [ ] Save experiment results.

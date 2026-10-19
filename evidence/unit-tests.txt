@@ -1,0 +1,26 @@
+test_custom_task_must_read_back_every_written_file (test_agent.AgentTests.test_custom_task_must_read_back_every_written_file) ... ok
+test_custom_task_readback_must_follow_final_revision (test_agent.AgentTests.test_custom_task_readback_must_follow_final_revision) ... ok
+test_empty_json_finish_requests_model_correction_without_fabricating_answer (test_agent.AgentTests.test_empty_json_finish_requests_model_correction_without_fabricating_answer) ... ok
+test_explicit_json_loop_uses_schema_and_real_tools (test_agent.AgentTests.test_explicit_json_loop_uses_schema_and_real_tools) ... ok
+test_independent_verification_rejects_invented_or_missing_tasks (test_agent.AgentTests.test_independent_verification_rejects_invented_or_missing_tasks) ... ok
+test_json_bad_action_does_not_silently_switch_protocol (test_agent.AgentTests.test_json_bad_action_does_not_silently_switch_protocol) ... ok
+test_malformed_tool_call_is_logged_as_tool_error (test_agent.AgentTests.test_malformed_tool_call_is_logged_as_tool_error) ... ok
+test_max_steps_and_tool_errors_are_preserved (test_agent.AgentTests.test_max_steps_and_tool_errors_are_preserved) ... ok
+test_native_loop_executes_real_files_and_returns_observations (test_agent.AgentTests.test_native_loop_executes_real_files_and_returns_observations) ... ok
+test_only_local_endpoint_names_are_accepted (test_agent.AgentTests.test_only_local_endpoint_names_are_accepted) ... ok
+test_premature_finish_is_incomplete_even_if_model_claims_success (test_agent.AgentTests.test_premature_finish_is_incomplete_even_if_model_claims_success) ... ok
+test_read_before_write_does_not_count_as_readback (test_agent.AgentTests.test_read_before_write_does_not_count_as_readback) ... ok
+test_request_failure_does_not_fabricate_a_completed_run (test_agent.AgentTests.test_request_failure_does_not_fabricate_a_completed_run) ... ok
+test_truncated_output_is_not_executed (test_agent.AgentTests.test_truncated_output_is_not_executed) ... ok
+test_limit_counts_utf8_bytes_and_read_size (test_workspace_tools.WorkspaceToolsTests.test_limit_counts_utf8_bytes_and_read_size) ... ok
+test_refuse_dangling_symlink_and_symlink_root (test_workspace_tools.WorkspaceToolsTests.test_refuse_dangling_symlink_and_symlink_root) ... ok
+test_refuse_non_text_and_directory_overwrite (test_workspace_tools.WorkspaceToolsTests.test_refuse_non_text_and_directory_overwrite) ... ok
+test_refuse_symlink_file_and_parent (test_workspace_tools.WorkspaceToolsTests.test_refuse_symlink_file_and_parent) ... ok
+test_reject_traversal_absolute_and_backslash_paths (test_workspace_tools.WorkspaceToolsTests.test_reject_traversal_absolute_and_backslash_paths) ... ok
+test_roundtrip_nested_file_and_listing (test_workspace_tools.WorkspaceToolsTests.test_roundtrip_nested_file_and_listing) ... ok
+test_unknown_tool_or_bad_arguments_cannot_execute (test_workspace_tools.WorkspaceToolsTests.test_unknown_tool_or_bad_arguments_cannot_execute) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.016s
+
+OK

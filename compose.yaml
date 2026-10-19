@@ -1,4 +1,3 @@
-
 services:
   ollama:
     image: ollama/ollama
@@ -7,14 +6,38 @@ services:
       - "127.0.0.1:11434:11434"
     volumes:
       - ollama:/root/.ollama
+    environment:
+      OLLAMA_NO_CLOUD: "1"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   agent:
+    profiles: ["tools"]
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: devops-agent
+    entrypoint: ["python", "local_agent.py"]
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_URL: http://ollama:11434
+    volumes:
+      - ./agent_results:/app/agent_results
+      - ./agent_workspace:/app/agent_workspace
+
+  compare:
+    profiles: ["tools"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      ollama:
+        condition: service_healthy
     environment:
       OLLAMA_URL: http://ollama:11434
     volumes:
@@ -23,12 +46,15 @@ services:
     tty: true
 
   mcp:
+    profiles: ["tools"]
     build:
       context: .
       dockerfile: Dockerfile.mcp
-    container_name: devops-mcp
+    environment:
+      WORKSPACE_DIR: /workspace
+    volumes:
+      - ./mcp_workspace:/workspace
     stdin_open: true
-    tty: true
 
 volumes:
   ollama:

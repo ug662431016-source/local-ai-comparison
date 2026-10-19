@@ -35,3 +35,13 @@ prompt.txt
 
 # Logs
 *.log
+.runtime/
+.native-models/
+agent_workspace/
+agent_results/
+mcp_workspace/
+evidence/
+tmp/
+tests/
+scripts/
+docs/

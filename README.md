@@ -19,7 +19,7 @@
 | เปรียบเทียบโมเดล | ผลเดิมที่อ่านได้ 12 รอบ รวม 24 คำตอบ จาก 8 คำถามไม่ซ้ำ | มี JSON ว่าง 1 ไฟล์ และ Qwen ถูกตัดคำตอบ 2 รอบ |
 | Docker + Python | ตรวจ runtime ใหม่และถาม 10+10 ผ่านทั้งสองโมเดลใน [environment-docker.json](evidence/environment-docker.json) | ผลเดิมยังแยกจากรอบตรวจใหม่ |
 | Continue | ตัวอย่าง config และภาพสองโมเดลใน Chat | ยังไม่มีหลักฐานเรียกเครื่องมือผ่าน Continue Agent |
-| Agent local | Qwen + structured JSON ผ่าน 7 checks ทั้ง [ใน container](agent_results/20261019_190946_794703.json) และ [Python บน Mac → Docker](agent_results/20261019_190955_157226.json) | native tool calling และ Llama JSON ยัง incomplete ดูผลทุกรอบด้านล่าง |
+| Agent local | Qwen + structured JSON ผ่าน 7 checks ใน [Docker Compose รอบล่าสุด 19:22:57](agent_results/20261019_192257_558909.json) พร้อมหลักฐาน [Python บน Mac → Docker รอบก่อน](agent_results/20261019_190955_157226.json) | native tool calling และ Llama JSON ยัง incomplete ดูผลทุกรอบด้านล่าง |
 | การติดตั้งโมเดลใน Docker | มีรายชื่อโมเดล digest และผลเรียกใช้ทั้งสองโมเดลใน [environment-docker.json](evidence/environment-docker.json) | ตรวจตามขอบเขต Docker ที่ผู้สอนกำหนด |
 | MCP | initialize, tools/list, เขียน–อ่านไฟล์จริง และปฏิเสธ path traversal ผ่านใน [mcp-probe.json](evidence/mcp-probe.json) | เป็นการตรวจ MCP แยกจาก Agent หลัก |
 
@@ -146,10 +146,29 @@ probe เรียก `initialize`, `tools/list`, `tools/call` เพื่อ�
 | [19:07:33](agent_results/20261019_190733_484809.json) | Llama | json | incomplete | อ่าน–เขียนจริง แต่เนื้อหา checklist ไม่ครบตามตัวตรวจ |
 | [19:07:49](agent_results/20261019_190749_089298.json) | Qwen | json | incomplete | ไฟล์และ 7 checks ถูกต้อง แต่ช่องคำตอบจบงานว่าง |
 | [19:07:58](agent_results/20261019_190758_270216.json) | Qwen บน host | json | incomplete | ไฟล์ถูกต้อง แต่ช่องคำตอบจบงานว่าง |
-| [19:09:46](agent_results/20261019_190946_794703.json) | Qwen ใน container | json | passed | รุ่นสุดท้าย อ่าน–เขียน–ตรวจกลับ และมีคำตอบจบงาน ครบ 7 checks |
+| [19:09:46](agent_results/20261019_190946_794703.json) | Qwen ใน container | json | passed | รอบพัฒนา อ่าน–เขียน–ตรวจกลับ และมีคำตอบจบงาน ครบ 7 checks |
 | [19:09:55](agent_results/20261019_190955_157226.json) | Qwen บน host | json | passed | Python บน Mac เรียกโมเดลใน Docker สำเร็จ ครบ 7 checks |
+| [19:22:57](agent_results/20261019_192257_558909.json) | Qwen ใน Docker Compose | json | passed | สาธิตจากโฟลเดอร์โปรเจกต์จริง อ่าน–เขียน–ตรวจกลับครบ 7 checks |
 
-ชุดตรวจใช้ Terminal เรียก Agent ใน container ชั่วคราว โดยแชร์ network namespace กับ `ollama` ผ่าน `--network container:ollama` และ mount log/ไฟล์งานออกมาที่โปรเจกต์ รอบสุดท้ายยังรัน Python Agent บน Mac โดยตรงไปที่ `127.0.0.1:11434` สำเร็จด้วย ทั้งสองเส้นทางใช้โมเดลใน Docker และไม่ใช่การใช้ Continue Agent UI
+รอบพัฒนาก่อนหน้าใช้ Terminal เรียก Agent ใน container ชั่วคราว โดยแชร์ network namespace กับ `ollama` ผ่าน `--network container:ollama` และ mount log/ไฟล์งานออกมาที่โปรเจกต์ มีผล Python Agent บน Mac ไปที่ `127.0.0.1:11434` สำเร็จด้วย ส่วนรอบล่าสุด 19:22:57 รัน Agent ผ่านบริการ Compose และเรียก Ollama ที่ `http://ollama:11434` ทุกเส้นทางใช้โมเดลใน Docker และไม่ใช่การใช้ Continue Agent UI
+
+### สาธิต Docker Compose รอบล่าสุด — 19 ตุลาคม 2026 เวลา 19:22:57
+
+รันจาก Terminal ในโฟลเดอร์โปรเจกต์:
+
+```bash
+docker compose --profile tools run --build --rm agent --demo --runtime docker
+```
+
+ค่าเริ่มต้นเลือกโมเดล `qwen2.5-coder:1.5b` และ protocol `json` ผลใน [log JSON](agent_results/20261019_192257_558909.json) และ [log แบบอ่านข้อความ](agent_results/20261019_192257_558909.txt) ระบุ endpoint `http://ollama:11434`, สถานะ `passed`, stop reason `finished` และผลตรวจครบ **7/7 ข้อ** เวลาวงรอบ Agent **10.783 วินาที** เป็นค่า `elapsed_seconds` ไม่รวมเวลาสร้าง Docker image
+
+โมเดลเรียก `read_file` อ่าน `notes.txt` → `write_file` สร้าง `checklist.md` → `read_file` อ่านผลกลับ ก่อนตอบ `Created and checked checklist.md` ตัวตรวจยืนยันว่าต้นฉบับไม่เปลี่ยน และไฟล์ผลมีงานเดิมครบ 3 ข้อตามลำดับ:
+
+```markdown
+- [ ] Study Docker.
+- [ ] Run local AI with Ollama.
+- [ ] Save experiment results.
+```
 
 ดู [สารบัญทุก run](evidence/AGENT-RUNS.md), [ไฟล์ที่ Agent สร้างจริง](evidence/demo-success/checklist.md), [ต้นฉบับ](evidence/demo-success/notes.txt) และ [ที่มากับ SHA-256](evidence/demo-success/provenance.json) สำเนามาจาก workspace จริงของรอบผ่านล่าสุด ผลทุกครั้งรวมถึงรอบไม่ผ่านถูกรักษาไว้ รอบพัฒนามีการปรับ prompt/validation จึงไม่ใช้เวลาเหล่านี้เทียบความเร็วโมเดลโดยตรง และการผ่านครั้งหนึ่งไม่รับรองว่าจะถูกทุกครั้ง
 
@@ -204,7 +223,7 @@ python3 scripts/verify_docker.py --model qwen2.5-coder:1.5b --protocol json
 
 จากชุดแรก Llama 3.2 3B เหมาะเป็นตัวเลือกทดลองสำหรับงานอธิบายพื้นฐานภาษาไทย เพราะคำตอบ CPU/RAM ชัดกว่า Qwen ส่วน Qwen รอน้อยกว่า 3 จาก 4 ข้อและตอบคำนวณง่ายได้ถูก แต่ผลเพิ่มเติมแสดงว่าทั้งสองโมเดลยังตอบข้อมูลผิดได้ จึงต้องตรวจเนื้อหาและการทำตามคำสั่งควบคู่กับเวลา
 
-จำนวนคำถามและรอบซ้ำยังน้อย โมเดลมีขนาด/ความยาวคำตอบต่างกัน และรัน Qwen ก่อน Llama เสมอ จึงยังสรุปว่าโมเดลหนึ่งเร็วหรือดีกว่าทุกงานไม่ได้ ผล Agent ใหม่แสดงว่า Qwen แบบ structured JSON ทำโจทย์สาธิตผ่าน ขณะที่อีกสามรอบยังทำไม่ครบ จึงต้องวิเคราะห์แยกจากผลถาม–ตอบโดยดูการใช้เครื่องมือและไฟล์จริง ยังไม่มีผลสร้างเว็บจาก `prompt.txt` หรือผลทดสอบข้ามเครื่องผ่าน Wi-Fi
+จำนวนคำถามและรอบซ้ำยังน้อย โมเดลมีขนาด/ความยาวคำตอบต่างกัน และรัน Qwen ก่อน Llama เสมอ จึงยังสรุปว่าโมเดลหนึ่งเร็วหรือดีกว่าทุกงานไม่ได้ ผล Agent แสดงว่า Qwen แบบ structured JSON ทำโจทย์สาธิตผ่าน รวมถึงรอบ Docker Compose ล่าสุด 19:22:57 ขณะที่บางรอบยังทำไม่ครบ จึงต้องวิเคราะห์แยกจากผลถาม–ตอบโดยดูการใช้เครื่องมือและไฟล์จริง ยังไม่มีผลสร้างเว็บจาก `prompt.txt` หรือผลทดสอบข้ามเครื่องผ่าน Wi-Fi
 
 งานต่อไปคือทดสอบซ้ำอย่างน้อย 3 รอบต่อโจทย์ แยกแบบโหลดโมเดลไว้แล้วกับแบบต้องโหลด บันทึกเวอร์ชัน/digest/ทรัพยากรครบ และตรวจ Agent ทั้งกรณีสำเร็จและกรณีโมเดลเรียกเครื่องมือไม่ถูกต้อง
 

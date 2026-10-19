@@ -1,0 +1,34 @@
+{
+  "run_id": "20261019_084251_841095",
+  "prompt": "อธิบายความแตกต่างระหว่าง Docker image กับ Docker container เป็นภาษาไทย",
+  "system": "ตอบคำถามเป็นภาษาไทยอย่างชัดเจน กระชับ และถูกต้อง หากไม่ทราบให้บอกว่าไม่ทราบ",
+  "options": {
+    "temperature": 0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 768
+  },
+  "timing_note": "Wall-clock time includes model loading when needed; no warm-up; models unloaded after each answer.",
+  "results": [
+    {
+      "model": "qwen2.5-coder:1.5b",
+      "answer": "Docker image และ Docker container คือสองส่วนที่แตกต่างกันใน Docker:\n\n1. Docker image: คือรูปแบบของ Docker ที่เก็บข้อมูลเกี่ยวกับแอปพลิเคชันหรือซอฟต์แวร์ที่ต้องการรันบนเครื่องที่ต้องการ. คุณสามารถสร้าง Docker image ได้จาก Dockerfile ซึ่งเป็นไฟล์ที่ระบุข้อมูลเกี่ยวกับแอปพลิเคชันหรือซอฟต์แวร์ที่ต้องการรันบนเครื่องที่ต้องการ. คุณสามารถสร้าง Docker image ได้จาก Dockerfile ซึ่งเป็นไฟล์ที่ระบุข้อมูลเกี่ยวกับแอปพลิเคชันหรือซอฟต์แวร์ที่ต้องการรันบนเครื่องที่ต้องการ. คุณสามารถสร้าง Docker image ได้จาก Dockerfile ซึ่งเป็นไฟล์ที่ระบุข้อมูลเกี่ยวกับแอปพลิเคชันหรือซอฟต์แวร์ที่ต้องการรันบนเครื่องที่ต้องการ.",
+      "elapsed_seconds": 7.474,
+      "load_seconds": 1.311,
+      "total_seconds_ollama": 7.458,
+      "output_tokens": 293,
+      "done_reason": "stop",
+      "truncated": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "answer": "Docker image และ Docker container เป็นสองส่วนสำคัญของ Docker ที่ช่วยให้สามารถจัดการและจัดเก็บแอปพลิเคชันบนเครื่องมือคลาวด์หรือเครื่องมือที่ไม่มีการจัดการได้\n\n**Docker Image**\n\nDocker image คือไฟล์ข้อมูลที่เก็บข้อมูลเกี่ยวกับระบบปฏิบัติการและแอปพลิเคชันที่จะถูกติดตั้งบนเครื่องมือ Docker Docker image เป็นไฟล์ .dockerfile ที่มีรายละเอียดเกี่ยวกับขั้นตอนการสร้างระบบปฏิบัติการและแอปพลิเคชัน รวมถึงข้อมูลเกี่ยวกับขั้นตอนการสร้างและติดตั้งระบบปฏิบัติการและแอปพลิเคชัน\n\n**Docker Container**\n\nDocker container คือสภาพแวดล้อมที่แอปพลิเคชันถูกสร้างและติดตั้งบนเครื่องมือ Docker Docker container เป็นไฟล์ .docker container ที่เก็บข้อมูลเกี่ยวกับแอปพลิเคชันที่ถูกสร้างและติดตั้งบนเครื่องมือ Docker\n\n**ความแตกต่างระหว่าง Docker image และ Docker container**\n\n*   Docker image คือไฟล์ข้อมูลที่เก็บข้อมูลเกี่ยวกับระบบปฏิบัติการและแอปพลิเคชันที่จะถูกติดตั้งบนเครื่องมือ Docker ในขณะที่ Docker container คือสภาพแวดล้อมที่แอปพลิเคชันถูกสร้างและติดตั้งบนเครื่องมือ Docker\n*   Docker image สามารถสร้างได้เพียงครั้งเดียว ในขณะที่ Docker container สามารถสร้างได้หลายครั้ง\n*   Docker image เก็บข้อมูลเกี่ยวกับขั้นตอนการสร้างและติดตั้งระบบปฏิบัติการและแอปพลิเคชัน ในขณะที่ Docker container เก็บข้อมูลเกี่ยวกับแอปพลิเคชันที่ถูกสร้างและติดตั้งบนเครื่องมือ Docker",
+      "elapsed_seconds": 20.729,
+      "load_seconds": 2.319,
+      "total_seconds_ollama": 20.724,
+      "output_tokens": 489,
+      "done_reason": "stop",
+      "truncated": false
+    }
+  ]
+}

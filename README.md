@@ -39,6 +39,7 @@
 | ไฟล์ | รายละเอียด |
 |---|---|
 | `compose.yaml` | กำหนดบริการ Ollama และใช้ volume เดิมชื่อ ollama |
+| `Dockerfile.mcp` | Dockerfile สำรองสำหรับ build แอป Python ตัวเดียวกับ `Dockerfile` ด้วยคำสั่ง `docker build -f Dockerfile.mcp -t devops-agent:mcp .` |
 | `chat_input.py` | โปรแกรมทดสอบถาม–ตอบ |
 | `prompts.md` | คำถามที่ใช้จริง แยกจากโจทย์ต่อยอด |
 | `prompt.txt` | โจทย์ภาษาอังกฤษสำหรับสร้างเว็บ To-do List |

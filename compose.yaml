@@ -1,3 +1,4 @@
+
 services:
   ollama:
     image: ollama/ollama
@@ -6,6 +7,28 @@ services:
       - "127.0.0.1:11434:11434"
     volumes:
       - ollama:/root/.ollama
+
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-agent
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_URL: http://ollama:11434
+    volumes:
+      - ./results:/app/results
+    stdin_open: true
+    tty: true
+
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: devops-mcp
+    stdin_open: true
+    tty: true
 
 volumes:
   ollama:

@@ -1,0 +1,34 @@
+{
+  "run_id": "20261019_084008_871987",
+  "prompt": "Docker คืออะไร อธิบายสั้น ๆ",
+  "system": "ตอบคำถามเป็นภาษาไทยอย่างชัดเจน กระชับ และถูกต้อง หากไม่ทราบให้บอกว่าไม่ทราบ",
+  "options": {
+    "temperature": 0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 768
+  },
+  "timing_note": "Wall-clock time includes model loading when needed; no warm-up; models unloaded after each answer.",
+  "results": [
+    {
+      "model": "qwen2.5-coder:1.5b",
+      "answer": "Docker คือแพลตฟอร์มที่ใช้สร้างและจัดการแอปพลิเคชันบนเครื่องคอมพิวเตอร์หรือเครือข่ายอื่น ๆ ที่มีความซับซ้อนและซับซ้อนกัน ใช้ Docker คุณสามารถสร้างและจัดการแอปพลิเคชันได้อย่างง่ายและรวดเร็ว ซึ่งทำให้การพัฒนาและทดสอบแอปพลิเคชันได้รวดเร็วและง่าย",
+      "elapsed_seconds": 4.694,
+      "load_seconds": 1.84,
+      "total_seconds_ollama": 4.685,
+      "output_tokens": 131,
+      "done_reason": "stop",
+      "truncated": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "answer": "Docker คือแพลตฟอร์มชุดเครื่องมือที่ช่วยให้สามารถสร้างและจัดการแอปพลิเคชันแบบคลาสสิกได้แบบมัลติเทสเตอร์ (multi-tenancy) โดยใช้เทคนิคการแยกแยะ (containerization) ซึ่งช่วยให้สามารถแยกแยะแอปพลิเคชันได้โดยไม่ต้องแยกเครื่อง (server)",
+      "elapsed_seconds": 7.661,
+      "load_seconds": 2.608,
+      "total_seconds_ollama": 7.656,
+      "output_tokens": 104,
+      "done_reason": "stop",
+      "truncated": false
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Results and screenshots
+results/
+screenshots/
+
+# Documentation
+README.md
+prompt.txt
+!prompts.md
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log

@@ -10,7 +10,13 @@ import urllib.error
 from datetime import datetime
 from pathlib import Path
 
-BASE_URL = 'http://localhost:11434'
+
+import os
+
+BASE_URL = os.environ.get(
+    'OLLAMA_URL',
+    'http://localhost:11434'
+).rstrip('/')
 MODELS = ['qwen2.5-coder:1.5b', 'llama3.2:3b']
 OPTIONS = {'temperature': 0, 'seed': 42, 'num_ctx': 4096, 'num_predict': 768}
 SYSTEM = 'ตอบคำถามเป็นภาษาไทยอย่างชัดเจน กระชับ และถูกต้อง หากไม่ทราบให้บอกว่าไม่ทราบ'

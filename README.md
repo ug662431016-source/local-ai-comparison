@@ -1,168 +1,60 @@
-# Local AI และ Agent ด้วย Ollama, Docker Compose และ Python
+# ทดลอง AI บนเครื่องผ่าน Docker
 
-โปรเจกต์ศึกษาการใช้ AI บนเครื่องส่วนตัว โดยเปรียบเทียบ **Qwen2.5-Coder 1.5B** กับ **Llama 3.2 3B** แล้วต่อยอดจากการถาม–ตอบเป็น Agent ที่เลือกเรียกเครื่องมืออ่านและเขียนไฟล์ พร้อมบันทึกขั้นตอนเพื่อตรวจสอบย้อนหลัง
+โครงงานนี้ทดลองใช้ **Qwen2.5-Coder 1.5B** และ **Llama 3.2 3B** บนเครื่องตัวเอง โดยรัน Ollama และโปรแกรมสาธิตผ่าน Docker ตามขอบเขตที่ผู้จัดทำได้รับจากอาจารย์
 
-## ปัญหาและวัตถุประสงค์
+งานแบ่งเป็น **2 ส่วน**: เปรียบเทียบคำตอบของ AI สองโมเดล และสาธิต Agent ให้ใช้เครื่องมืออ่าน–สร้าง–ตรวจไฟล์
 
-การตอบคำถามได้เพียงอย่างเดียวยังไม่แสดงว่า AI ทำงานกับไฟล์หรือทำงานหลายขั้นตอนได้ และคำตอบที่ดูมั่นใจอาจมีข้อมูลผิด จึงต้องทดลองทั้งคุณภาพคำตอบ เวลา และการเรียกเครื่องมือจริง ขอบเขตงานตามที่ผู้จัดทำยืนยันจากคำสั่งอาจารย์คือใช้ Docker เท่านั้น โดยรัน Ollama โมเดล และโปรแกรมสาธิตใน container
+## 1. ทำงานนี้เพื่ออะไร
 
-1. สร้างสภาพแวดล้อม Docker ด้วยไฟล์กำหนดค่าที่นำไปใช้ซ้ำได้
-2. เปรียบเทียบสองโมเดลด้วยคำถามและค่าตั้งเดียวกัน พร้อมเก็บคำตอบเดิม
-3. สาธิต Agent รับโจทย์ → เลือกเครื่องมือ → อ่านผล → ทำขั้นถัดไป → สรุปงาน
-4. ทดสอบการเรียกโมเดลใน Docker จาก Terminal และ Continue ใน VS Code
-5. แสดงหลักฐานติดตั้งโมเดลและรัน Agent ใน Docker พร้อมเก็บผลผ่าน volume และ bind mount
+ต้องการทดลองว่า AI ที่รันบนเครื่องตอบคำถามได้ถูกต้องเพียงใด ใช้เวลารอเท่าไร และสามารถเลือกใช้เครื่องมือเพื่อทำงานหลายขั้นตอนได้หรือไม่ จึงเก็บทั้งคำตอบ เวลา ขั้นตอนทำงาน และไฟล์ผลจริงไว้ตรวจสอบ
 
-## สถานะหลักฐาน
-
-| ส่วน | สิ่งที่มีในชุดนี้ | ข้อจำกัด |
+| ส่วนของงาน | สิ่งที่ผู้ใช้สั่ง | สิ่งที่ได้กลับมา |
 |---|---|---|
-| เปรียบเทียบโมเดล | ผลเดิมที่อ่านได้ 12 รอบ รวม 24 คำตอบ จาก 8 คำถามไม่ซ้ำ | มี JSON ว่าง 1 ไฟล์ และ Qwen ถูกตัดคำตอบ 2 รอบ |
-| Docker + Python | ตรวจ runtime ใหม่และถาม 10+10 ผ่านทั้งสองโมเดลใน [environment-docker.json](evidence/environment-docker.json) | ผลเดิมยังแยกจากรอบตรวจใหม่ |
-| Continue | ตัวอย่าง config และภาพสองโมเดลใน Chat | ยังไม่มีหลักฐานเรียกเครื่องมือผ่าน Continue Agent |
-| Agent local | Qwen + structured JSON ผ่าน 7 checks ใน [Docker Compose รอบล่าสุด 19:22:57](agent_results/20261019_192257_558909.json) พร้อมหลักฐาน [Python บน Mac → Docker รอบก่อน](agent_results/20261019_190955_157226.json) | native tool calling และ Llama JSON ยัง incomplete ดูผลทุกรอบด้านล่าง |
-| การติดตั้งโมเดลใน Docker | มีรายชื่อโมเดล digest และผลเรียกใช้ทั้งสองโมเดลใน [environment-docker.json](evidence/environment-docker.json) | ตรวจตามขอบเขต Docker ที่ผู้สอนกำหนด |
-| MCP | initialize, tools/list, เขียน–อ่านไฟล์จริง และปฏิเสธ path traversal ผ่านใน [mcp-probe.json](evidence/mcp-probe.json) | เป็นการตรวจ MCP แยกจาก Agent หลัก |
+| **เปรียบเทียบโมเดล (`compare`)** | ถามคำถามเดียวกันกับ Qwen และ Llama | คำตอบของแต่ละโมเดล เวลารอ และไฟล์บันทึกผล |
+| **สาธิต Agent (`agent`)** | ให้แปลงบันทึกเป็นรายการงานที่มีช่องติ๊ก | ไฟล์รายการงาน พร้อมบันทึกว่า AI เรียกใช้เครื่องมืออะไรบ้าง |
 
-ดู [สถาปัตยกรรม](docs/ARCHITECTURE.md), [รายการก่อนส่ง](docs/SUBMISSION-CHECKLIST.md) และ [สารบัญผลเดิม](results/README.md) การมีโค้ดหรือคำสั่งในเอกสารยังไม่เท่ากับมีหลักฐานทดสอบสำเร็จ
+เกณฑ์คะแนนมีหัวข้อ **Totally local Agentic** ส่วนโจทย์ “อ่านบันทึกแล้วสร้างรายการงาน” เป็นตัวอย่างที่เลือกใช้สาธิตเอง เกณฑ์ใน PDF ไม่ได้สั่งให้ทำโจทย์ checklist นี้โดยเฉพาะ
 
-## การออกแบบระบบ
+## 2. แต่ละส่วนทำหน้าที่อะไร
 
-เส้นทางสาธิตหลัก: Terminal → Docker Compose → โปรแกรม compare/Agent ใน container → `http://ollama:11434` → Ollama ใน Docker → โมเดลใน volume `ollama`
-
-การเชื่อมต่อจากภายนอก: Continue ใน VS Code → `localhost:11434` → Ollama ใน Docker โดย VS Code เป็น client และโมเดลยังทำงานใน container
-
-Agent ใช้ `/api/chat` และค่าเริ่มต้น `--protocol json` เพื่อให้โมเดลเลือก action สำหรับ `list_files`, `read_file` และ `write_file` แล้วส่งผลเครื่องมือกลับไปให้โมเดลทำงานต่อ มี `--protocol native` สำหรับทดลอง native tool calling แยกต่างหาก งานสาธิตอ่าน `notes.txt` แล้วสร้างและตรวจ `checklist.md` ในโฟลเดอร์เฉพาะของรอบนั้น ดูแผนภาพใน [ARCHITECTURE.md](docs/ARCHITECTURE.md)
-
-## เครื่องมือและไฟล์
-
-เครื่องทดลองเดิม: MacBook Air ชิป Apple M4, RAM 16 GB ตามข้อมูลผู้จัดทำ ผลเดิมไม่ได้เก็บ metadata ครบ จึงไม่รับรองว่าเครื่องอื่นจะได้เวลาเท่ากัน
-
-รอบตรวจใหม่วันที่ 19 ตุลาคม 2026 บันทึก Docker Desktop **4.67.0**, Docker Engine **29.3.1**, Compose **v5.1.1**, Ollama **0.40.6** พร้อม model digest และ quantization ของทั้งสองโมเดลไว้ใน [environment-docker.json](evidence/environment-docker.json) ข้อมูลนี้เป็นสถานะตอนตรวจใหม่ ไม่ได้ใช้ยืนยันเวอร์ชันย้อนหลังของผลเดิม
-
-| ไฟล์/โฟลเดอร์ | หน้าที่ |
+| ชื่อที่พบในโครงงาน | หน้าที่ |
 |---|---|
-| `compose.yaml` | กำหนด Ollama และบริการทางเลือกสำหรับ compare, Agent และ MCP |
-| `Dockerfile`, `Dockerfile.mcp` | สร้างอิมเมจโปรแกรม Python และ MCP |
-| `chat_input.py` | ส่งคำถามเดียวกันให้ Qwen และ Llama แล้วบันทึกผล |
-| `local_agent.py` | วงรอบให้โมเดลเลือกเครื่องมือและรับผลกลับ |
-| `workspace_tools.py` | เครื่องมือจัดการไฟล์ภายในขอบเขต workspace |
-| `mcp_server.py` | เปิดเครื่องมือชุดเดียวกันผ่าน MCP แบบ stdio เมื่อเลือกใช้ |
-| `prompts.md` | คำถามจริงครบทั้ง 8 แบบและโจทย์สาธิตใหม่ |
-| `continue-config.example.yaml` | ตัวอย่างตั้งค่า Continue โหมด Chat |
-| `continue-mcp.example.yaml` | ตัวอย่างเพิ่ม MCP ให้ Continue ต้องแทน absolute path ก่อนใช้ ยังไม่ใช่ผลทดสอบ Agent UI |
-| `results/` | ผลเปรียบเทียบเดิม JSON/TXT และข้อจำกัดของผล |
-| `agent_results/` | log JSON/TXT ของ Agent ทั้งรอบผ่านและรอบไม่ครบ |
-| `agent_workspace/` | โฟลเดอร์งานแยกตามรอบของ Agent |
-| `mcp_workspace/` | พื้นที่ไฟล์สำหรับ MCP แยกจากงาน Agent |
-| `screenshots/` | ภาพหลักฐานเดิมและคำอธิบาย |
-| `docs/` | สถาปัตยกรรมและรายการตรวจส่งงาน |
-| `evidence/` | metadata ของ runtime และผลตรวจ Docker/MCP ใหม่ |
-| `scripts/` | ตรวจ runtime, probe MCP และรันชุดตรวจ Agent บน Docker |
-| `prompt.txt` | โจทย์ต่อยอดเว็บ To-do List; ยังไม่ใช่ผลสร้างเว็บสำเร็จ |
+| **Docker** | รันโปรแกรมในสภาพแวดล้อมที่จัดเตรียมไว้ แต่ละหน่วยที่กำลังรันเรียกว่า container |
+| **Docker Compose** | อ่าน `compose.yaml` แล้วสร้างและเปิดบริการที่ต้องใช้ตามค่าที่กำหนด |
+| **Ollama** | โหลดโมเดล AI และรับคำขอให้โมเดลสร้างคำตอบ |
+| **Qwen / Llama** | โมเดล AI สองตัวที่ทดลองใช้ สร้างคำตอบหรือเลือกเครื่องมือที่โปรแกรมเตรียมไว้ |
+| **Python** | รับคำถาม ส่งให้โมเดล บันทึกผล และเรียกเครื่องมืออ่าน–เขียนไฟล์ตามที่โมเดลเลือก |
+| **Terminal ใน VS Code** | ช่องที่ผู้ใช้พิมพ์คำสั่งเพื่อเริ่มและสาธิตระบบ |
 
-## เริ่มใช้ Ollama ใน Docker
+เส้นทางหลักของการทำงาน:
 
-ติดตั้ง [Docker Desktop](https://www.docker.com/products/docker-desktop/) แล้วเปิด Docker Desktop ก่อน โปรแกรม Python สำหรับสาธิตอยู่ใน image จาก Terminal ในโฟลเดอร์โปรเจกต์:
-
-```bash
-docker --version
-docker compose version
-docker compose config
+```text
+ผู้ใช้สั่งจาก Terminal บนเครื่อง
+          ↓
+โปรแกรม Python ใน Docker
+          ↓
+Ollama ใน Docker → โมเดล Qwen หรือ Llama
+          ↓
+Python แสดงคำตอบและบันทึกผลกลับลงโฟลเดอร์บนเครื่อง
 ```
 
-Compose ใช้ volume ภายนอกชื่อ `ollama` เครื่องที่ยังไม่มีให้สร้างก่อน คำสั่งนี้ใช้ volume ที่มีอยู่ได้:
+ไฟล์โมเดลเก็บใน **Docker volume** ชื่อ `ollama` ส่วนผลทดลองเก็บในโฟลเดอร์โปรเจกต์ที่เชื่อมเข้า container เรียกว่า **bind mount** จึงเปิดอ่านผลจาก VS Code ได้หลัง container ของโปรแกรมจบงาน
 
-```bash
-docker volume create ollama
-docker compose up -d ollama
-docker compose ps
-docker compose exec ollama ollama list
+## 3. Agent ในงานนี้ทำอะไร และทำไปทำไม
+
+**Agent คือการให้โมเดลเลือกขั้นตอนและเรียกเครื่องมือเพื่อทำงานต่อเนื่องจนจบโจทย์** ในโครงงานนี้เครื่องมือมี 3 อย่าง: ดูรายชื่อไฟล์ อ่านไฟล์ และเขียนไฟล์ข้อความ
+
+โจทย์สาธิตคือ “อ่าน `notes.txt` แล้วสร้าง `checklist.md` โดยเก็บงานเดิมให้ครบตามลำดับ จากนั้นเปิดไฟล์ที่สร้างมาตรวจ”
+
+**ก่อนทำ — บันทึกที่ Python เตรียมให้เมื่อใช้ `--demo`:**
+
+```text
+Study Docker.
+Run local AI with Ollama.
+Save experiment results.
 ```
 
-หากขาดโมเดล ให้ดาวน์โหลดขณะเชื่อมอินเทอร์เน็ต:
-
-```bash
-docker compose exec ollama ollama pull qwen2.5-coder:1.5b
-docker compose exec ollama ollama pull llama3.2:3b
-```
-
-โมเดลเก็บใน Docker volume ไม่ได้รวมอยู่ใน GitHub หลังดาวน์โหลดแล้วงานสาธิตเรียกโมเดลและเครื่องมือในเครื่อง โดยไม่ใช้ cloud model/API key
-
-หากมีคอนเทนเนอร์ `ollama` จาก `docker run` ใช้ชื่อหรือพอร์ตเดียวกัน ให้ตรวจของเดิมก่อนเปิด Compose ไม่ต้องลบ volume เพื่อย้ายระบบ ดู [การย้ายคอนเทนเนอร์เดิม](#ย้ายจากคอนเทนเนอร์เดิมครั้งเดียว)
-
-## เปรียบเทียบคำตอบสองโมเดล
-
-```bash
-docker compose --profile tools run --build --rm compare
-```
-
-พิมพ์คำถามแล้วกด Enter โปรแกรมเรียก Qwen ก่อน Llama และบันทึกใน `results/` ทีละโมเดล พิมพ์ `/examples` เพื่อดูตัวอย่าง หรือ `exit` เพื่อออก แต่ละคำถามไม่มีประวัติสนทนาข้ามรอบ โปรแกรมรับข้อความทีละบรรทัดและไม่ได้อ่าน `prompt.txt` อัตโนมัติ
-
-## สาธิต Agent ผ่านโมเดลใน Docker
-
-รันโปรแกรม Agent และโมเดลใน Docker ผ่านบริการ profile `tools`:
-
-```bash
-docker compose --profile tools run --build --rm agent --demo --model qwen2.5-coder:1.5b --protocol json --runtime docker
-```
-
-Agent เตรียม `notes.txt` เป็นข้อมูลตั้งต้น โมเดลเป็นผู้เลือกเครื่องมือเพื่ออ่านข้อมูล สร้าง `checklist.md` และตรวจงาน ผลอยู่ใน `agent_results/<run_id>.json` และ `.txt` ส่วนไฟล์งานอยู่ใน `agent_workspace/<run_id>/`
-
-บริการนี้ใช้ `OLLAMA_URL=http://ollama:11434` และ mount ผลออกมาที่โฟลเดอร์โปรเจกต์ Terminal เป็นผู้สั่งงานจากภายนอก container ส่วน Continue เป็นอีกตัวอย่าง client ที่เชื่อมเข้า Docker
-
-ตรวจทั้ง log การเรียกเครื่องมือและเนื้อหาไฟล์จริง การตอบว่า “สร้างแล้ว” อย่างเดียวไม่พอ สำหรับงานอื่นใช้ `--task 'ข้อความโจทย์'` แทน `--demo` และดูตัวเลือกด้วย `docker compose --profile tools run --rm agent --help`
-
-ค่าเริ่มต้นเป็น **Qwen + `--protocol json`** ซึ่งให้โมเดลเลือกหนึ่ง action ต่อรอบผ่าน structured JSON แล้วโปรแกรมเรียกเครื่องมือจริงและส่ง observation กลับให้โมเดลตัดสินใจต่อ ส่วน `--protocol native` ใช้ `tools`/`tool_calls` ของ Ollama และอาจมีหลาย tool calls ในคำตอบเดียว ต้องรายงาน protocol ตาม log แยกผลกัน เพราะผลทดสอบสองรูปแบบไม่เหมือนกัน
-
-`--runtime docker` เป็นป้ายบริบทที่ผู้รันระบุ จึงแนบสถานะคอนเทนเนอร์และ endpoint ประกอบ คำว่า `native` ใน `--protocol native` หมายถึงรูปแบบ tool calling ของ Ollama ซึ่งใช้กับโมเดลใน Docker ได้
-
-## MCP ทางเลือก
-
-`mcp_server.py` เปิดเครื่องมือจัดการไฟล์ชุดเดียวกับ Agent ผ่าน stdio สำหรับ MCP client ที่รองรับ โดยใช้พื้นที่ `mcp_workspace/` แยกจากงาน Agent ส่วน `local_agent.py` เรียก Python tools โดยตรง การรัน Agent หลักจึงไม่ได้เป็นหลักฐานว่า client เชื่อมต่อ MCP สำเร็จ
-
-Build server ก่อน แล้วใช้โปรแกรมตรวจที่ทำหน้าที่เป็น MCP client ผ่าน stdio โดยไม่เปิด TTY:
-
-```bash
-docker compose build mcp
-python3 scripts/probe_mcp.py
-```
-
-probe เรียก `initialize`, `tools/list`, `tools/call` เพื่อเขียนและอ่านไฟล์จริง พร้อมตรวจว่า `../outside.txt` ถูกปฏิเสธ ผลที่ตรวจสำเร็จอยู่ใน [mcp-probe.json](evidence/mcp-probe.json)
-
-ถ้าต้องการใช้ MCP client อื่น ให้ตั้ง command `docker`, arguments `compose run --rm --no-deps -T mcp` และ working directory เป็นโฟลเดอร์โปรเจกต์เดียวกับที่ build หากใช้ Compose project name อื่น ต้องระบุ `-p` ให้ตรงทั้ง build และ run ดูขอบเขตไฟล์ใน [ARCHITECTURE.md](docs/ARCHITECTURE.md) เกณฑ์ที่ตรวจไม่ได้ระบุว่าต้องใช้ MCP, CrewAI หรือสร้างเว็บ To-do โดยเฉพาะ
-
-สำหรับ Continue มี [continue-mcp.example.yaml](continue-mcp.example.yaml) ให้แทน `/ABSOLUTE/PATH/TO/DevOps-ready` ด้วยโฟลเดอร์จริงก่อนนำไปใช้ ยังไม่ได้เปลี่ยน config จริงของผู้ใช้หรือทดสอบการเรียก MCP ผ่าน Agent UI
-
-## ผลตรวจ Agent ใหม่
-
-ผลต่อไปนี้แยกจาก 12 รอบถาม–ตอบเดิม ทั้งหมดเรียกโมเดล Ollama ใน Docker ผ่าน local endpoint และเก็บผลไม่ครบไว้ตามจริง:
-
-| Run ID | โมเดล | Protocol | สถานะ | สิ่งที่พบ |
-|---|---|---|---|---|
-| [19:02:50](agent_results/20261019_190250_185723.json) | Llama | native | incomplete | เรียกเครื่องมือจริง แต่ลำดับอ่านต้นฉบับและเนื้อหา checklist ไม่ผ่าน |
-| [19:03:05](agent_results/20261019_190305_604987.json) | Qwen | native | incomplete | พิมพ์ JSON เป็นข้อความ แต่ไม่มี tool call จริง |
-| [19:03:52](agent_results/20261019_190352_584807.json) | Llama | json | incomplete | เรียกเครื่องมือ แต่แก้ต้นฉบับและผลไม่ตรงโจทย์ |
-| [19:04:11](agent_results/20261019_190411_562205.json) | Qwen | json | passed | อ่านต้นฉบับ → เขียน checklist → อ่านตรวจกลับ ครบ 7 checks |
-| [19:07:33](agent_results/20261019_190733_484809.json) | Llama | json | incomplete | อ่าน–เขียนจริง แต่เนื้อหา checklist ไม่ครบตามตัวตรวจ |
-| [19:07:49](agent_results/20261019_190749_089298.json) | Qwen | json | incomplete | ไฟล์และ 7 checks ถูกต้อง แต่ช่องคำตอบจบงานว่าง |
-| [19:07:58](agent_results/20261019_190758_270216.json) | Qwen บน host | json | incomplete | ไฟล์ถูกต้อง แต่ช่องคำตอบจบงานว่าง |
-| [19:09:46](agent_results/20261019_190946_794703.json) | Qwen ใน container | json | passed | รอบพัฒนา อ่าน–เขียน–ตรวจกลับ และมีคำตอบจบงาน ครบ 7 checks |
-| [19:09:55](agent_results/20261019_190955_157226.json) | Qwen บน host | json | passed | Python บน Mac เรียกโมเดลใน Docker สำเร็จ ครบ 7 checks |
-| [19:22:57](agent_results/20261019_192257_558909.json) | Qwen ใน Docker Compose | json | passed | สาธิตจากโฟลเดอร์โปรเจกต์จริง อ่าน–เขียน–ตรวจกลับครบ 7 checks |
-
-รอบพัฒนาก่อนหน้าใช้ Terminal เรียก Agent ใน container ชั่วคราว โดยแชร์ network namespace กับ `ollama` ผ่าน `--network container:ollama` และ mount log/ไฟล์งานออกมาที่โปรเจกต์ มีผล Python Agent บน Mac ไปที่ `127.0.0.1:11434` สำเร็จด้วย ส่วนรอบล่าสุด 19:22:57 รัน Agent ผ่านบริการ Compose และเรียก Ollama ที่ `http://ollama:11434` ทุกเส้นทางใช้โมเดลใน Docker และไม่ใช่การใช้ Continue Agent UI
-
-### สาธิต Docker Compose รอบล่าสุด — 19 ตุลาคม 2026 เวลา 19:22:57
-
-รันจาก Terminal ในโฟลเดอร์โปรเจกต์:
-
-```bash
-docker compose --profile tools run --build --rm agent --demo --runtime docker
-```
-
-ค่าเริ่มต้นเลือกโมเดล `qwen2.5-coder:1.5b` และ protocol `json` ผลใน [log JSON](agent_results/20261019_192257_558909.json) และ [log แบบอ่านข้อความ](agent_results/20261019_192257_558909.txt) ระบุ endpoint `http://ollama:11434`, สถานะ `passed`, stop reason `finished` และผลตรวจครบ **7/7 ข้อ** เวลาวงรอบ Agent **10.783 วินาที** เป็นค่า `elapsed_seconds` ไม่รวมเวลาสร้าง Docker image
-
-โมเดลเรียก `read_file` อ่าน `notes.txt` → `write_file` สร้าง `checklist.md` → `read_file` อ่านผลกลับ ก่อนตอบ `Created and checked checklist.md` ตัวตรวจยืนยันว่าต้นฉบับไม่เปลี่ยน และไฟล์ผลมีงานเดิมครบ 3 ข้อตามลำดับ:
+**หลังทำ — ไฟล์ที่ Agent ต้องสร้าง:**
 
 ```markdown
 - [ ] Study Docker.
@@ -170,101 +62,187 @@ docker compose --profile tools run --build --rm agent --demo --runtime docker
 - [ ] Save experiment results.
 ```
 
-ดู [สารบัญทุก run](evidence/AGENT-RUNS.md), [ไฟล์ที่ Agent สร้างจริง](evidence/demo-success/checklist.md), [ต้นฉบับ](evidence/demo-success/notes.txt) และ [ที่มากับ SHA-256](evidence/demo-success/provenance.json) สำเนามาจาก workspace จริงของรอบผ่านล่าสุด ผลทุกครั้งรวมถึงรอบไม่ผ่านถูกรักษาไว้ รอบพัฒนามีการปรับ prompt/validation จึงไม่ใช้เวลาเหล่านี้เทียบความเร็วโมเดลโดยตรง และการผ่านครั้งหนึ่งไม่รับรองว่าจะถูกทุกครั้ง
+สามบรรทัดหมายถึง “เรียน Docker / รัน AI ด้วย Ollama / บันทึกผลทดลอง” งานของ Agent รอบนี้คือ **แปลงบันทึกให้มีช่องติ๊ก** ส่วนช่อง `[ ]` มีไว้ให้ผู้ใช้ติ๊กเมื่อทำงานในรายการนั้นเสร็จ
 
-[Unit tests 21 ข้อ](evidence/unit-tests.txt) ผ่าน ครอบคลุมการออกนอก workspace การอ่านไฟล์รุ่นสุดท้ายกลับ และกรณีโมเดลอ้างความสำเร็จโดยไม่มีเครื่องมือ โปรแกรมขอให้โมเดลแก้คำตอบเมื่อ `finish` ว่าง โดยไม่เติมคำตอบแทนโมเดล
+ขั้นตอนที่เกิดขึ้นจริง:
 
-## ทำซ้ำชุดตรวจ
+1. **โมเดลเลือกอ่าน** `notes.txt` → Python เปิดไฟล์แล้วส่งเนื้อหาให้โมเดล
+2. **โมเดลเลือกเขียน** `checklist.md` → Python บันทึกเนื้อหาที่โมเดลส่งมา
+3. **โมเดลเลือกอ่านตรวจ** `checklist.md` → Python อ่านไฟล์จริงกลับให้โมเดล ก่อนโมเดลแจ้งจบงาน
 
-คำสั่งด้านล่าง build อิมเมจใน Compose project `devops-review` แล้วทดสอบกับคอนเทนเนอร์ `ollama` ที่เปิดและมีโมเดลอยู่แล้ว โดยไม่ต้องเปิด Ollama service ตัวใหม่:
+โจทย์นี้เป็นงานเล็กที่คนทำเองได้ง่าย ประโยชน์หลักคือใช้ตรวจให้เห็นชัดว่า AI เลือกเครื่องมือและทำงานกับไฟล์จริงครบขั้นตอน ไม่ได้หมายความว่า AI ลงมือทำงานทั้งสามรายการในบันทึกแล้ว
+
+Python มีตัวตรวจแยกอีกชั้นหนึ่ง ดูว่าใช้เครื่องมือจริง เขียนและอ่านผลกลับ อ่านต้นฉบับก่อนเขียน ต้นฉบับไม่เปลี่ยน งานครบตามลำดับ และอ่าน checklist หลังการแก้ครั้งสุดท้าย รวม **7 เงื่อนไข** ดังนั้นข้อความ `passed` มาจากตัวตรวจของโปรแกรม ไม่ใช่การให้โมเดลตัดสินตัวเอง
+
+**ผ่าน 7/7 คือผลตรวจเดโมของโปรแกรม ไม่ใช่คะแนน 7 ข้อของอาจารย์** ตัวอย่างก่อน–หลังที่เก็บไว้: [บันทึกต้นฉบับ](evidence/demo-success/notes.txt) และ [รายการงานที่สร้าง](evidence/demo-success/checklist.md)
+
+## 4. วิธีเปิดและสาธิตระบบ
+
+เปิด Docker Desktop และเปิด Terminal ในโฟลเดอร์ที่มี `compose.yaml` คำสั่งต่อไปนี้ใช้สำหรับเครื่องที่มีโมเดลทั้งสองและ Docker volume `ollama` แล้ว หากเริ่มจากเครื่องใหม่ ให้ดูหัวข้อ “ติดตั้งบนเครื่องใหม่” ท้ายเอกสาร
+
+### เตรียมก่อนนำเสนอ ขณะมีอินเทอร์เน็ต
+
+รันทีละคำสั่ง:
 
 ```bash
-docker compose -p devops-review build agent mcp
-python3 scripts/verify_docker.py --model qwen2.5-coder:1.5b --protocol json
+docker compose --profile tools build compare agent
+docker compose up -d ollama
+docker compose ps
+docker compose exec ollama ollama list
 ```
 
-สคริปต์เก็บคำสั่ง exit code และ log ใน `evidence/docker-verification-json.json` รวมถึงเรียก MCP probe ด้วย project name เดียวกัน หากต้องการสำรวจ native tool calling ให้ระบุ `--protocol native` และอ่านสถานะแต่ละรอบจริง
+ตรวจว่า Ollama ทำงาน และรายชื่อมี `qwen2.5-coder:1.5b` กับ `llama3.2:3b` คำสั่ง build เตรียมโปรแกรมจาก Dockerfile ส่วนคำสั่ง up เปิดบริการ Ollama
 
-`python3 scripts/inspect_runtime.py --help` แสดงตัวเลือกเก็บ metadata ของ Ollama และ Docker ผลตรวจ runtime ที่แนบอยู่ใน [environment-docker.json](evidence/environment-docker.json)
+### สาธิตที่ 1: ถามคำถามเดียวกับสองโมเดล
 
-## วิธีทดลองและการอ่านเวลา
+```bash
+docker compose --profile tools run --rm --no-deps --pull never compare
+```
 
-ใช้ system prompt เดียวกันว่า “ตอบคำถามเป็นภาษาไทยอย่างชัดเจน กระชับ และถูกต้อง หากไม่ทราบให้บอกว่าไม่ทราบ” และค่าตั้ง `temperature=0`, `seed=42`, `num_ctx=4096`, `num_predict=768`, `stream=false`, `keep_alive=0`
+เมื่อเห็น `คำถามของคุณ:` ให้พิมพ์:
 
-`elapsed_seconds` คือเวลาตั้งแต่ส่งคำขอจนอ่านคำตอบเสร็จ รวมเวลาโหลดโมเดลถ้ามี `load_seconds` และ `total_seconds_ollama` มาจาก Ollama ส่วน `output_tokens` เป็นจำนวนโทเคน ไม่ใช่จำนวนคำภาษาไทย
+```text
+HTML, CSS และ JavaScript ทำหน้าที่ต่างกันอย่างไร ตอบเป็น 3 ข้อ
+```
 
-โปรแกรมไม่มี warm-up และขอ unload หลังตอบ แต่ไม่ได้บังคับ unload ก่อนคำถามแรก หากมีโมเดลโหลดอยู่ก่อน สภาพเริ่มต้นอาจต่างกัน การใช้ seed/temperature เดียวกันไม่ได้รับรองผลเหมือนเดิมทุกสภาพแวดล้อม
+โปรแกรมเรียก **Qwen ก่อน แล้วจึงเรียก Llama** แสดงคำตอบและเวลาของแต่ละตัว จากนั้นบันทึกลง `results/` พิมพ์ `exit` แล้วกด Enter เพื่อออก หรือพิมพ์ `/examples` เพื่อดูคำถามตัวอย่าง
 
-ผลเดิมมี `truncated=true` และ `done_reason=length` **2 คำตอบของ Qwen** ในโจทย์ท่องเที่ยว ทั้งคู่ใช้ 768 โทเคน ส่วนอีก 22 คำตอบจบด้วย `stop` คำตอบจบตามปกติไม่ได้รับรองว่าข้อมูลถูกต้อง
+เวลาวิเคราะห์ ให้ดูทั้ง **ตอบถูกหรือไม่ / ทำตามคำสั่งหรือไม่ / ใช้เวลารอเท่าไร** แต่ละคำถามเริ่มใหม่ ไม่มีประวัติสนทนาข้ามคำถาม
 
-## ผลเปรียบเทียบเดิม
+### สาธิตที่ 2: ให้ Agent จัดการไฟล์
 
-วันที่ในชื่อไฟล์ 18–19 ตุลาคม 2026 มีผลอ่านได้ 12 รอบ/24 คำตอบ/8 คำถามไม่ซ้ำ รายการครบและลิงก์ผลแต่ละรอบอยู่ใน [results/README.md](results/README.md) JSON ว่าง `20261019_094041_455894.json` ไม่ถูกนับและคงไว้โดยไม่แก้ข้อมูลต้นฉบับ
+หลังออกจาก compare แล้ว ให้รัน:
 
-ตารางต่อไปนี้เป็น 4 คำถามชุดแรก แต่ละข้อทดสอบ 1 ครั้งต่อโมเดล เวลาหน่วยวินาที:
+```bash
+docker compose --profile tools run --rm --no-deps --pull never agent --demo --runtime docker
+```
 
-| คำถาม | Qwen | Llama | การประเมินคำตอบ |
+ค่าเริ่มต้นใช้ **Qwen2.5-Coder 1.5B** โมเดลส่งชื่อเครื่องมือและข้อมูลที่ต้องการเป็น JSON ซึ่งเป็นรูปแบบข้อมูลที่ Python อ่านไปเรียกเครื่องมือต่อได้
+
+ตัวอย่างรอบที่ผ่านมีการอ่าน `notes.txt` → เขียน `checklist.md` → อ่าน `checklist.md` กลับ โดยบางรอบอาจใช้เครื่องมือเพิ่มเติมหรือทำไม่ครบ เมื่อสำเร็จจะเห็น `Status: passed | finished` และผลตรวจทั้ง 7 ค่าเป็น `true` หากรอบใดเป็น `incomplete` ให้เปิดบันทึกดูขั้นที่ไม่ผ่านและรายงานตามผลจริง
+
+จากนั้นเปิดใน VS Code:
+
+- `agent_workspace/<รหัสรอบ>/notes.txt` — ต้นฉบับของรอบนั้น
+- `agent_workspace/<รหัสรอบ>/checklist.md` — ไฟล์ที่ Agent สร้าง
+- `agent_results/<รหัสรอบ>.txt` — ขั้นตอน เครื่องมือ และผลตรวจแบบอ่านง่าย
+
+รหัสรอบแสดงใน Terminal แต่ละครั้งจะสร้างพื้นที่งานใหม่ หาก Terminal แสดงพาธขึ้นต้น `/app/` นั่นคือพาธใน container ให้เปิดโฟลเดอร์ชื่อเดียวกันภายในโปรเจกต์บนเครื่อง
+
+**ใช้แบบ offline ได้เมื่อเตรียม image และโมเดลไว้ครบ และเปิด Ollama แล้ว** คำสั่งสาธิตข้างบนใช้ image ที่มีอยู่โดยไม่สั่ง build หรือ pull image หลักฐานที่แนบยังไม่ได้บันทึกสถานะการตัดอินเทอร์เน็ต จึงแยกเงื่อนไขการใช้งานนี้ออกจากผลทดสอบที่ยืนยันแล้ว
+
+## 5. ผลที่ทดลองได้จริง
+
+### ผลเปรียบเทียบเดิม
+
+ชุดผลวันที่ 18–19 ตุลาคม 2026 มี **12 รอบที่อ่านผลได้ รวม 24 คำตอบ จากคำถามไม่ซ้ำ 8 ข้อความ** ไฟล์ `.json` และ `.txt` ที่ชื่อเดียวกันเป็นผลของรอบเดียวกัน ดู [สารบัญผลครบทุกครั้ง](results/README.md)
+
+ตารางนี้เลือก 4 คำถามชุดแรก แต่ละข้อทดสอบหนึ่งครั้งต่อโมเดล เวลาหน่วยวินาที:
+
+| คำถาม | Qwen | Llama | สิ่งที่พบจากการอ่านคำตอบ |
 |---|---:|---:|---|
-| [10+10](results/20261018_143617_008885.txt) | 1.640 | 3.528 | ทั้งสองตอบ 20 ถูกต้อง |
-| [HTML/CSS/JavaScript](results/20261018_144045_981015.txt) | 3.885 | 17.146 | Qwen สั้นและแยกหน้าที่ได้; Llama พูดซ้ำ |
-| [CPU/RAM](results/20261018_144142_345545.txt) | 7.178 | 5.656 | Qwen วกวนและเปรียบเทียบคลาดเคลื่อน; Llama อธิบายชัดกว่าแต่ยังไม่ละเอียด |
+| [10 + 10](results/20261018_143617_008885.txt) | 1.640 | 3.528 | ทั้งสองตอบ 20 ถูกต้อง |
+| [HTML / CSS / JavaScript](results/20261018_144045_981015.txt) | 3.885 | 17.146 | Qwen แยกหน้าที่ได้สั้นกว่า ส่วน Llama มีข้อความซ้ำ |
+| [CPU / RAM](results/20261018_144142_345545.txt) | 7.178 | 5.656 | Qwen อธิบายวกวนและเปรียบเทียบคลาดเคลื่อน ส่วน Llama ชัดกว่า |
 | [โจทย์แอปเปิล](results/20261018_144208_372172.txt) | 3.106 | 5.315 | ทั้งสองตอบ 10 ลูกถูกต้อง |
 
-รอบเพิ่มเติมประกอบด้วย Docker, image/container, Docker Compose, โจทย์ท่องเที่ยว และการตรวจ `10+10=?` ซ้ำ ผลวันที่ 19 ตุลาคม เวลา 14:17 เป็นรอบตรวจ Compose หนึ่งรอบ และยังมีผลเวลา 17:08 และ 17:09 ภายหลัง
+เวลาในตารางเป็น **เวลารอรวมการโหลดโมเดลเมื่อมี** จึงไม่ใช่ความเร็วสร้างคำตอบล้วน และรอบสาธิตใหม่อาจได้เวลาและคำตอบต่างจากตาราง
 
-ตัวอย่างข้อผิดพลาดที่ต้องใช้ประกอบการวิเคราะห์:
+ผลที่ไม่สมบูรณ์ถูกเก็บไว้ตามจริง: มี JSON ว่าง 1 ไฟล์ซึ่งไม่นับใน 12 รอบ และ Qwen มีคำตอบถึงขีดจำกัดความยาว 2 ครั้งในโจทย์ท่องเที่ยว นอกจากนี้ [โจทย์ image/container](results/20261019_084251_841095.txt) มีข้อความซ้ำและข้อมูลผิด เช่น Llama เรียก image ว่าไฟล์ `.dockerfile` ทั้งที่ image คือชุดไฟล์และค่าที่ใช้สร้าง container ส่วน Dockerfile คือไฟล์คำสั่งสำหรับ build image
 
-- [image/container](results/20261019_084251_841095.txt): Qwen พูดซ้ำและไม่ได้อธิบาย container ครบ; Llama กล่าวผิดว่า image เป็นไฟล์ `.dockerfile` และ container เป็นไฟล์ `.docker container` ความหมายที่ถูกต้องคือ image เป็นชุดไฟล์และค่าที่ใช้สร้าง container ส่วน container เป็น instance ของ image ที่นำมารันได้ ([Docker Docs](https://docs.docker.com/get-started/docker-overview/))
-- [ท่องเที่ยวรอบ 10:02](results/20261019_100243_560689.txt) และ [17:08](results/20261019_170847_227505.txt): Qwen พูดซ้ำจนถูกตัดและไม่ได้ตอบสามสถานที่ตามโจทย์ ส่วน Llama ยกชื่อสถานที่ได้ แต่รายละเอียดบางแห่งยังต้องตรวจแหล่งข้อมูลก่อนนำไปใช้จริง
+**ข้อสรุป:** ในชุดแรก Qwen ใช้เวลารอน้อยกว่า 3 จาก 4 ข้อ ส่วน Llama อธิบาย CPU/RAM ชัดกว่า ทั้งสองยังตอบผิดได้ จำนวนคำถามและรอบซ้ำยังน้อย จึงยังสรุปว่าโมเดลใดดีกว่าทุกงานไม่ได้
 
-การประเมินนี้เป็นการอ่านคำตอบจากชุดเล็ก ไม่ใช่ benchmark อัตโนมัติ และไม่ได้ใช้ข้อมูลท่องเที่ยวจากโมเดลเป็นข้อเท็จจริงอ้างอิง
+### ผลตรวจ Agent ใหม่
 
-## ข้อสรุปและข้อจำกัด
+รอบล่าสุดที่มีไฟล์หลักฐานในชุดนี้คือ **19 ตุลาคม 2026 เวลา 19:22:57 (เวลาไทย)** รันผ่าน Docker Compose ใช้ Qwen และ JSON endpoint `http://ollama:11434` ได้ `passed / finished` และผ่าน **7/7 เงื่อนไข** ใช้เวลาวงรอบ Agent **10.783 วินาที** ไม่รวมเวลา build image
 
-จากชุดแรก Llama 3.2 3B เหมาะเป็นตัวเลือกทดลองสำหรับงานอธิบายพื้นฐานภาษาไทย เพราะคำตอบ CPU/RAM ชัดกว่า Qwen ส่วน Qwen รอน้อยกว่า 3 จาก 4 ข้อและตอบคำนวณง่ายได้ถูก แต่ผลเพิ่มเติมแสดงว่าทั้งสองโมเดลยังตอบข้อมูลผิดได้ จึงต้องตรวจเนื้อหาและการทำตามคำสั่งควบคู่กับเวลา
+เปิดดูได้จาก [บันทึกขั้นตอนแบบอ่านง่าย](agent_results/20261019_192257_558909.txt), [ข้อมูล JSON](agent_results/20261019_192257_558909.json), [ไฟล์ที่สร้างจริง](evidence/demo-success/checklist.md) และ [ข้อมูลที่มาของสำเนาไฟล์](evidence/demo-success/provenance.json)
 
-จำนวนคำถามและรอบซ้ำยังน้อย โมเดลมีขนาด/ความยาวคำตอบต่างกัน และรัน Qwen ก่อน Llama เสมอ จึงยังสรุปว่าโมเดลหนึ่งเร็วหรือดีกว่าทุกงานไม่ได้ ผล Agent แสดงว่า Qwen แบบ structured JSON ทำโจทย์สาธิตผ่าน รวมถึงรอบ Docker Compose ล่าสุด 19:22:57 ขณะที่บางรอบยังทำไม่ครบ จึงต้องวิเคราะห์แยกจากผลถาม–ตอบโดยดูการใช้เครื่องมือและไฟล์จริง ยังไม่มีผลสร้างเว็บจาก `prompt.txt` หรือผลทดสอบข้ามเครื่องผ่าน Wi-Fi
+มีบันทึก Agent รวม 10 รอบ ผ่าน 4 รอบ อีก 6 รอบทำไม่ครบ รวมถึงผลทดลองเรียกเครื่องมือด้วยรูปแบบอื่นและผล Llama ดู [ตารางทุกรอบและสาเหตุ](evidence/AGENT-RUNS.md) บางรอบมีการปรับโค้ดและคำสั่งระหว่างพัฒนา จึงไม่ใช้ชุดนี้จัดอันดับความเร็วโมเดล
 
-งานต่อไปคือทดสอบซ้ำอย่างน้อย 3 รอบต่อโจทย์ แยกแบบโหลดโมเดลไว้แล้วกับแบบต้องโหลด บันทึกเวอร์ชัน/digest/ทรัพยากรครบ และตรวจ Agent ทั้งกรณีสำเร็จและกรณีโมเดลเรียกเครื่องมือไม่ถูกต้อง
+## 6. ลำดับนำเสนอประมาณ 5–7 นาที
 
-## Continue ใน VS Code
+| ลำดับ | เปิดอะไรให้อาจารย์ดู | ประเด็นที่อธิบาย |
+|---|---|---|
+| 1. เป้าหมาย | หัวข้อ 1–2 ของหน้านี้ | ทดลองสองโมเดลและ Agent โดยใช้ Docker; อธิบายหน้าที่ Docker, Ollama, โมเดล และ Python |
+| 2. ระบบกำลังทำงาน | Docker Desktop และผล `ollama list` | Ollama และโมเดลทำงานอยู่ใน Docker บนเครื่อง |
+| 3. เปรียบเทียบคำตอบ | รัน compare แล้วเปิดตารางผลเดิม | ถามโจทย์เดียวกัน ดูทั้งความถูกต้องและเวลา พร้อมยกตัวอย่างคำตอบผิด |
+| 4. สาธิต Agent | รัน demo แล้วเปิดต้นฉบับ ผลงาน และบันทึกขั้นตอน | โมเดลเลือกอ่าน–เขียน–อ่านตรวจ Python เรียกเครื่องมือและตรวจผล |
+| 5. สรุป | หัวข้อผลทดลองและข้อจำกัด | สิ่งที่ทำได้จริง ปัญหาที่พบ และเหตุผลที่ยังสรุปผู้ชนะทุกงานไม่ได้ |
 
-ใช้ตัวอย่าง `continue-config.example.yaml` กับส่วนเสริม Continue โดยสำรอง local config เดิมก่อน คัดลอกค่าที่ต้องการไปยัง config จริง เปิดแชทใหม่ แล้วเลือกโมเดลในโหมด **Chat** ตัวอย่างใน repository ไม่เปลี่ยน config บนเครื่องให้อัตโนมัติ
+ประโยคเปิดที่ใช้เล่าได้:
 
-หลักฐานเดิมแสดง Llama ตอบ “The answer is 20.” และ Qwen แสดงคำตอบในกรอบ `main.py` พร้อมข้อความส่วนเกิน ยังไม่มีหลักฐานกดสร้างไฟล์จากกรอบคำตอบและไม่มีเวลาที่วัดจาก Continue ดู [รายละเอียดภาพ](screenshots/README.md)
+> โครงงานนี้ทดลองใช้ AI บนเครื่องผ่าน Docker โดยเปรียบเทียบ Qwen กับ Llama จากคำถามเดียวกัน และทดลองให้ AI เลือกใช้เครื่องมืออ่านและสร้างไฟล์ เป้าหมายคือดูทั้งคุณภาพคำตอบ เวลา และการทำงานจริง พร้อมเก็บผลไว้ตรวจสอบ
 
-บทบาท `chat` ในตัวอย่างไม่ได้ยืนยันการใช้เครื่องมือผ่าน Agent UI หากวัดเวลาจาก Continue ให้แยกจากตาราง Python พร้อมบันทึกโมเดล โหมด และสภาพ warm-up
+### คำถามที่ควรอธิบายได้
 
-## แนวทางนำเสนอ
+- **ทำไมใช้ Docker?** เก็บการกำหนดบริการไว้ใน `compose.yaml` และวิธีสร้างโปรแกรมไว้ใน Dockerfile เพื่อเตรียมสภาพแวดล้อมซ้ำได้ เป็นส่วนของ Infrastructure as Code (IaC)
+- **ทำไมมี Ollama?** ใช้โหลดและเรียกโมเดลในเครื่อง โปรแกรม Python ส่งคำขอไปหา Ollama
+- **Agent ทำอะไรสำเร็จ?** แปลงบันทึกเป็น checklist โดยเลือกใช้เครื่องมืออ่าน–เขียน–อ่านตรวจ แล้วตัวตรวจของ Python ยืนยันผล
+- **ทำไมไฟล์เยอะ?** แต่ละรอบเก็บทั้งไฟล์ข้อมูลและฉบับอ่านง่าย พร้อมเอกสาร ภาพ และชุดทดสอบสำหรับตรวจย้อนหลัง
+- **ใช้ต่อได้เมื่อปิดโปรแกรมหรือไม่?** โมเดลอยู่ใน volume และผลอยู่ในโฟลเดอร์บนเครื่อง จึงเก็บไว้ใช้ต่อได้เมื่อเปิดระบบอีกครั้ง
 
-1. อธิบายปัญหาและเปิดแผนภาพ: Agent เชื่อม Ollama ภายในเครือข่าย Docker อย่างไร
-2. แสดง Compose, รายชื่อโมเดล และถามโจทย์เดียวกันผ่านบริการ compare ใน Docker
-3. เปิด JSON/TXT เดิม เปรียบเทียบคำตอบที่ถูก/ผิด เวลาโหลด และตัวอย่างคำตอบถูกตัด
-4. รัน Agent แล้วเปิด log การเลือกเครื่องมือพร้อม `checklist.md` ที่สร้างจริง
-5. แสดงการเก็บโมเดลใน volume และผลทดลองใน bind mount
-6. แสดง Continue Chat และสรุปข้อจำกัด หลีกเลี่ยงอ้างว่าส่วนที่ยังไม่มีหลักฐานผ่านแล้ว
+## ขอบเขตและข้อจำกัด
 
-## แก้ปัญหาและคำสั่งประจำ
+- โมเดลยังตอบผิด พูดซ้ำ หรือทำตามคำสั่งไม่ครบได้ การผ่านเดโมครั้งหนึ่งไม่ได้รับรองว่าจะผ่านทุกครั้ง
+- Agent ชุดนี้ใช้เครื่องมือกับไฟล์ข้อความในพื้นที่งานของแต่ละรอบ รองรับดูรายชื่อ อ่าน และเขียนไฟล์ ขนาดสูงสุด 32 KiB ต่อไฟล์ พร้อมป้องกันการออกนอกพื้นที่งาน
+- ผลเปรียบเทียบมีรอบซ้ำน้อย โมเดลมีขนาดและความยาวคำตอบต่างกัน และเรียก Qwen ก่อน Llama เสมอ เวลาอย่างเดียวจึงไม่พอประเมินคุณภาพ
+- มีหลักฐาน Continue แบบ Chat และการตรวจ MCP แยกต่างหาก ส่วนการใช้เครื่องมือผ่าน Continue Agent UI ยังไม่ได้ยืนยัน
+- การสาธิตหลักใช้โปรแกรมและโมเดลใน Docker รายละเอียดการเชื่อมต่อดู [สถาปัตยกรรมระบบ](docs/ARCHITECTURE.md)
 
-| อาการ/งาน | วิธีตรวจ |
+## ไฟล์สำคัญอยู่ตรงไหน
+
+| ไฟล์ / โฟลเดอร์ | ใช้ทำอะไร |
 |---|---|
-| ติดต่อ Docker Ollama ไม่ได้ | เปิด Docker Desktop; `docker compose up -d ollama`; `docker compose ps` |
-| ไม่พบโมเดล | `docker compose exec ollama ollama list` แล้ว pull เฉพาะโมเดลที่ขาด |
-| พอร์ต/ชื่อซ้ำ | ตรวจคอนเทนเนอร์เดิมที่ใช้ชื่อหรือพอร์ตเดียวกันก่อนเปิดเพิ่ม |
-| Agent ไม่ผ่าน | ดู log รอบนั้น, protocol, ข้อผิดพลาดเครื่องมือ และไฟล์จริง |
-| คำตอบไม่จบ | ดู `truncated`; ถ้าปรับ `num_predict` ให้ทำเหมือนกันทั้งสองโมเดลและแยกรอบใหม่ |
-| ดู log Docker | `docker compose logs --tail 50 ollama` |
-| หยุดระบบ | `docker compose stop` |
+| `compose.yaml`, `Dockerfile` | กำหนดบริการและสร้างโปรแกรมใน Docker |
+| `chat_input.py` | โปรแกรมเปรียบเทียบคำตอบสองโมเดล |
+| `local_agent.py`, `workspace_tools.py` | วงรอบ Agent ตัวตรวจผล และเครื่องมือไฟล์ |
+| `results/` | ผลถาม–ตอบสองโมเดล |
+| `agent_workspace/`, `agent_results/` | ไฟล์ที่ Agent ทำงานด้วย และบันทึกขั้นตอนแต่ละรอบ |
+| `evidence/`, `screenshots/` | หลักฐานผลตรวจและภาพประกอบ |
+| `docs/` | เอกสารอธิบายระบบเพิ่มเติม |
+| `tests/`, `scripts/` | ชุดทดสอบโค้ดและเครื่องมือตรวจระบบซ้ำ |
+
+## รายละเอียดเพิ่มเติมเมื่อจำเป็น
+
+<details>
+<summary>ติดตั้งบนเครื่องใหม่ และแก้กรณีไม่มีโมเดล</summary>
+
+ติดตั้งและเปิด Docker Desktop ก่อน จาก Terminal ในโฟลเดอร์โปรเจกต์ รันทีละคำสั่งขณะมีอินเทอร์เน็ต:
+
+```bash
+docker volume create ollama
+docker compose up -d ollama
+docker compose exec ollama ollama pull qwen2.5-coder:1.5b
+docker compose exec ollama ollama pull llama3.2:3b
+docker compose --profile tools build compare agent
+docker compose exec ollama ollama list
+```
+
+โมเดลไม่ได้รวมใน GitHub จึงต้องดาวน์โหลดบนเครื่องใหม่ก่อนใช้งาน ถ้ามี container เดิมใช้ชื่อ `ollama` หรือพอร์ต 11434 อยู่แล้ว ให้ตรวจของเดิมก่อน ดูวิธีย้ายในหัวข้อถัดไป
+
+</details>
+
+<details>
+<summary>แก้ปัญหาเบื้องต้น และย้ายจาก container เดิม</summary>
+
+| อาการ | วิธีตรวจ |
+|---|---|
+| ติดต่อ Ollama ไม่ได้ | เปิด Docker Desktop แล้วรัน `docker compose up -d ollama` และ `docker compose ps` |
+| ไม่พบโมเดล | ตรวจ `docker compose exec ollama ollama list` แล้ว pull เฉพาะตัวที่ขาดขณะมีอินเทอร์เน็ต |
+| แก้โค้ดแล้วผลยังเหมือนเดิม | build โปรแกรมใหม่ด้วย `docker compose --profile tools build compare agent` ก่อนเปิดรอบใหม่ |
+| Agent ได้ incomplete | เปิด `agent_results/<รหัสรอบ>.txt` ดูข้อผิดพลาดและไฟล์ของรอบนั้น |
+| ต้องการหยุดระบบ | รัน `docker compose stop` |
 
 ### ย้ายจากคอนเทนเนอร์เดิมครั้งเดียว
 
-สำหรับกรณีเคยสร้าง `ollama` ด้วย `docker run` เท่านั้น ตรวจพื้นที่เก็บเดิมก่อน:
+ใช้เฉพาะกรณีเคยสร้าง `ollama` ด้วย `docker run` ตรวจพื้นที่เก็บเดิม:
 
 ```bash
 docker inspect ollama --format '{{range .Mounts}}{{println .Type .Name .Destination}}{{end}}'
 ```
 
-ต้องพบ `volume ollama /root/.ollama` หากไม่ตรงให้ปรับการอ้างอิง volume ก่อน เมื่อไม่มีคำขอ AI กำลังทำงาน ให้รันทีละคำสั่งและหยุดหากมี error:
+ต้องพบ `volume ollama /root/.ollama` หากไม่ตรง ให้ปรับการอ้างอิง volume ก่อน เมื่อไม่มีคำขอ AI กำลังทำงาน ให้รันทีละคำสั่งและหยุดหากมี error:
 
 ```bash
 docker stop ollama
@@ -274,7 +252,7 @@ docker compose ps
 docker compose exec ollama ollama list
 ```
 
-`ollama-backup` เป็นคอนเทนเนอร์เดิมที่หยุดไว้และใช้ volume เดียวกัน ไม่ใช่ข้อมูลโมเดลสำรองแยกชุด อย่าเปิดพร้อมตัวใหม่ หากต้องย้อนกลับ ให้หยุดและนำคอนเทนเนอร์ Compose ออกก่อน:
+`ollama-backup` เป็น container เดิมที่หยุดไว้ ใช้ volume เดียวกัน ไม่ใช่สำเนาโมเดลแยกชุด อย่าเปิดพร้อมตัวใหม่ หากต้องย้อนกลับ ให้รันทีละคำสั่ง:
 
 ```bash
 docker compose down
@@ -282,7 +260,40 @@ docker rename ollama-backup ollama
 docker start ollama
 ```
 
-## ภาพหลักฐานเดิม
+</details>
+
+<details>
+<summary>วิธีวัดเวลา หลักฐานเวอร์ชัน และชุดทดสอบ</summary>
+
+เครื่องทดลองเดิมเป็น MacBook Air ชิป Apple M4, RAM 16 GB ตามข้อมูลผู้จัดทำ ผลเดิมไม่ได้เก็บเวอร์ชันครบ ส่วน [ข้อมูลระบบที่ตรวจใหม่วันที่ 19 ตุลาคม 2026](evidence/environment-docker.json) บันทึก Docker Desktop 4.67.0, Engine 29.3.1, Compose 5.1.1, Ollama 0.40.6 และรหัสระบุโมเดลไว้ ข้อมูลรอบใหม่ไม่ใช้ยืนยันเวอร์ชันย้อนหลัง
+
+Compare ใช้ system prompt ภาษาไทยเดียวกัน ค่าตั้ง `temperature=0`, `seed=42`, `num_ctx=4096`, `num_predict=768` และขอ unload โมเดลหลังตอบ ไม่มี warm-up และไม่ได้บังคับ unload ก่อนคำถามแรก จึงอาจมีสภาพเริ่มต้นต่างกัน
+
+- `elapsed_seconds`: เวลารอตั้งแต่ส่งคำขอจนรับคำตอบเสร็จ รวมเวลาโหลดเมื่อมี
+- `load_seconds`: เวลาโหลดโมเดลที่ Ollama รายงาน
+- `truncated=true`: คำตอบถึงขีดจำกัดความยาว อาจยังตอบไม่จบ
+
+Agent ใช้ JSON เป็นค่าเริ่มต้นเพื่อให้โมเดลเลือกเครื่องมือ ส่วน `--protocol native` เป็นการทดลองรูปแบบ tool calling อีกแบบ ใช้กับโมเดลใน Docker ได้เช่นกัน และมีบันทึกรอบที่ยังไม่สำเร็จใน [สารบัญ Agent](evidence/AGENT-RUNS.md) คำว่า `--runtime docker` เป็นป้ายบริบทในบันทึก; คำสั่ง Docker Compose เป็นส่วนที่นำโปรแกรมไปรันใน container
+
+มีโค้ด unit tests ปัจจุบัน 27 ข้อ รวมกรณีข้อความผิดรูปที่เคยทำให้ compare ล้ม ส่วน [บันทึกผลทดสอบที่แนบ](evidence/unit-tests.txt) เป็นรอบเดิม 21 ข้อก่อนเพิ่มกรณีดังกล่าว การทดสอบโค้ดเหล่านี้แยกจากการรันโมเดลจริง
+
+เครื่องมือตรวจซ้ำ: `scripts/inspect_runtime.py`, `scripts/verify_docker.py` และ `scripts/probe_mcp.py` รายละเอียดอยู่ใน [สถาปัตยกรรมและหลักฐานระบบ](docs/ARCHITECTURE.md)
+
+</details>
+
+<details>
+<summary>ส่วนเสริม Continue และ MCP</summary>
+
+Continue คือส่วนเสริม VS Code ที่ใช้เป็นอีกช่องทางส่งคำถามไปหาโมเดลใน Docker ผ่าน `localhost:11434` ดู [ตัวอย่าง config สำหรับ Chat](continue-config.example.yaml) และ [คำอธิบายภาพทดสอบ](screenshots/README.md)
+
+MCP เป็นช่องทางให้ client เรียกเครื่องมือไฟล์ที่เปิดด้วย `mcp_server.py` มี [ผลตรวจการเชื่อมต่อ เขียน–อ่านไฟล์ และป้องกันการออกนอกพื้นที่งาน](evidence/mcp-probe.json) แยกจาก Agent หลัก ซึ่งเรียกเครื่องมือ Python โดยตรง ดู [ตัวอย่าง config MCP](continue-mcp.example.yaml) โดยต้องเปลี่ยนพาธตัวอย่างเป็นพาธโปรเจกต์จริงก่อนใช้
+
+สองส่วนนี้เป็นรายละเอียดเพิ่มเติมจากการสาธิตหลัก การมีผล MCP ผ่านไม่ได้ยืนยันว่า Continue Agent UI เรียกเครื่องมือสำเร็จแล้ว
+
+</details>
+
+<details>
+<summary>ภาพหลักฐานเดิม</summary>
 
 ![Compose และรายชื่อโมเดล](screenshots/docker-compose-running.png)
 
@@ -292,16 +303,16 @@ docker start ollama
 
 ![คำตอบ Qwen ใน Continue](screenshots/continue-qwen-compose.png)
 
-ภาพเหล่านี้เป็นหลักฐานเดิม ส่วน Agent และ MCP ที่เพิ่มภายหลังมี log ผลตรวจอยู่ใน `agent_results/` และ `evidence/`
+ภาพเหล่านี้เป็นหลักฐานเดิม ผล Agent และ MCP ที่เพิ่มภายหลังอยู่ใน `agent_results/` และ `evidence/`
 
-## แหล่งอ้างอิง
+</details>
 
-- [Docker Compose](https://docs.docker.com/compose/intro/compose-application-model/) และ [volumes](https://docs.docker.com/reference/compose-file/volumes/)
+## แหล่งอ้างอิงทางเทคนิค
+
+- [Docker Compose](https://docs.docker.com/compose/intro/compose-application-model/) และ [Docker volumes](https://docs.docker.com/reference/compose-file/volumes/)
 - [Docker: image และ container](https://docs.docker.com/get-started/docker-overview/)
-- [Ollama Docker](https://docs.ollama.com/docker) และ [Generate API](https://docs.ollama.com/api/generate)
-- [Ollama tool calling](https://github.com/ollama/ollama/blob/main/docs/capabilities/tool-calling.mdx)
-- [Ollama FAQ: host และพื้นที่เก็บโมเดล](https://docs.ollama.com/faq)
+- [Ollama ใน Docker](https://docs.ollama.com/docker) และ [Ollama API](https://docs.ollama.com/api/generate)
 - [Continue config](https://docs.continue.dev/reference)
-- [Model Context Protocol architecture](https://modelcontextprotocol.io/docs/learn/architecture)
+- [Model Context Protocol](https://modelcontextprotocol.io/docs/learn/architecture)
 
-เอกสารนี้แยกข้อมูลจากผลเดิมออกจากสิ่งที่ต้องทดลองใหม่ และไม่แก้คำตอบหรือเวลาต้นฉบับ
+คำตอบ เวลา และไฟล์ผลทดลองต้นฉบับคงตามที่บันทึกจริง

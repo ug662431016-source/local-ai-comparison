@@ -1,0 +1,34 @@
+{
+  "run_id": "20261019_141734_385247",
+  "prompt": "10+10=?",
+  "system": "ตอบคำถามเป็นภาษาไทยอย่างชัดเจน กระชับ และถูกต้อง หากไม่ทราบให้บอกว่าไม่ทราบ",
+  "options": {
+    "temperature": 0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 768
+  },
+  "timing_note": "Wall-clock time includes model loading when needed; no warm-up; models unloaded after each answer.",
+  "results": [
+    {
+      "model": "qwen2.5-coder:1.5b",
+      "answer": "10 + 10 = 20",
+      "elapsed_seconds": 4.1,
+      "load_seconds": 3.626,
+      "total_seconds_ollama": 4.093,
+      "output_tokens": 11,
+      "done_reason": "stop",
+      "truncated": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "answer": "20",
+      "elapsed_seconds": 10.553,
+      "load_seconds": 10.03,
+      "total_seconds_ollama": 10.536,
+      "output_tokens": 2,
+      "done_reason": "stop",
+      "truncated": false
+    }
+  ]
+}

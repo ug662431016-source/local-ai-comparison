@@ -1,0 +1,34 @@
+{
+  "run_id": "20261018_144142_345545",
+  "prompt": "อธิบายว่า CPU และ RAM ต่างกันอย่างไร สำหรับผู้เริ่มต้น ไม่เกิน 5 ประโยค",
+  "system": "ตอบคำถามเป็นภาษาไทยอย่างชัดเจน กระชับ และถูกต้อง หากไม่ทราบให้บอกว่าไม่ทราบ",
+  "options": {
+    "temperature": 0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 768
+  },
+  "timing_note": "Wall-clock time includes model loading when needed; no warm-up; models unloaded after each answer.",
+  "results": [
+    {
+      "model": "qwen2.5-coder:1.5b",
+      "answer": "CPU (Central Processing Unit) คือเครื่องมือที่ใช้ในการทำงานที่สำคัญของคอมพิวเตอร์ ซึ่งทำงานด้วยความเร็วและมีความละเอียดที่สูงกว่า RAM (Random Access Memory) ซึ่งใช้ในการจัดเก็บข้อมูลในคอมพิวเตอร์ แต่ CPU สามารถทำงานได้ที่สุดในขณะที่ RAM สามารถทำงานได้ที่สุดในขณะที่ CPU ทำงาน ดังนั้น CPU ใช้ในการทำงานที่สำคัญของคอมพิวเตอร์ ซึ่งทำงานด้วยความเร็วและมีความละเอียดที่สูงกว่า RAM ซึ่งใช้ในการจัดเก็บข้อมูลในคอมพิวเตอร์ แต่ CPU สามารถทำงานได้ที่สุดในขณะที่ RAM สามารถทำงานได้ที่สุดในขณะที่ CPU ทำงาน",
+      "elapsed_seconds": 7.178,
+      "load_seconds": 1.059,
+      "total_seconds_ollama": 7.17,
+      "output_tokens": 233,
+      "done_reason": "stop",
+      "truncated": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "answer": "CPU (Central Processing Unit) และ RAM (Random Access Memory) เป็นส่วนสำคัญของคอมพิวเตอร์ ต่างกันในด้านต่อไปนี้\n\n- CPU คือส่วนกลางที่ประมวลผลคำสั่งและดำเนินการคำสั่ง\n- RAM คือพื้นที่ที่ใช้ในการเก็บข้อมูลสั้น ๆ ที่ใช้ในการประมวลผล",
+      "elapsed_seconds": 5.656,
+      "load_seconds": 2.314,
+      "total_seconds_ollama": 5.652,
+      "output_tokens": 89,
+      "done_reason": "stop",
+      "truncated": false
+    }
+  ]
+}

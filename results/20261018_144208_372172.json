@@ -1,0 +1,34 @@
+{
+  "run_id": "20261018_144208_372172",
+  "prompt": "มีแอปเปิล 12 ลูก ให้เพื่อน 5 ลูก แล้วซื้อเพิ่ม 3 ลูก เหลือกี่ลูก อธิบายสั้น ๆ",
+  "system": "ตอบคำถามเป็นภาษาไทยอย่างชัดเจน กระชับ และถูกต้อง หากไม่ทราบให้บอกว่าไม่ทราบ",
+  "options": {
+    "temperature": 0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 768
+  },
+  "timing_note": "Wall-clock time includes model loading when needed; no warm-up; models unloaded after each answer.",
+  "results": [
+    {
+      "model": "qwen2.5-coder:1.5b",
+      "answer": "มีแอปเปิล 12 ลูก ให้เพื่อน 5 ลูก ซื้อเพิ่ม 3 ลูก แล้วเหลือ 12 - 5 + 3 = 10 ลูก",
+      "elapsed_seconds": 3.106,
+      "load_seconds": 1.05,
+      "total_seconds_ollama": 3.101,
+      "output_tokens": 60,
+      "done_reason": "stop",
+      "truncated": false
+    },
+    {
+      "model": "llama3.2:3b",
+      "answer": "เริ่มจากแอปเปิล 12 ลูก ให้เพื่อน 5 ลูก จะเหลือแอปเปิล 12 - 5 = 7 ลูก\n\nจากนั้นซื้อเพิ่ม 3 ลูก จะเหลือแอปเปิล 7 + 3 = 10 ลูก",
+      "elapsed_seconds": 5.315,
+      "load_seconds": 1.81,
+      "total_seconds_ollama": 5.309,
+      "output_tokens": 71,
+      "done_reason": "stop",
+      "truncated": false
+    }
+  ]
+}
